@@ -152,47 +152,17 @@
 		console.log(getPrefix(), `Object URL created: ${url}`);
 		// --- END VERBOSE LOGGING ---
 
-		// FIX: Use a more reliable download method by creating a temporary link.
-		try {
-			console.log(getPrefix(), "Attempting download via temporary anchor element...");
-			const a = document.createElement("a");
-			a.href = url;
-			a.download = filename;
-			document.body.appendChild(a);
-			a.click();
-			document.body.removeChild(a);
-			URL.revokeObjectURL(url);
-			console.log(
-				getPrefix(),
-				`--- SCRAPE PROCESS COMPLETE: Download initiated for ${filename} ---`
-			);
-		} catch (error) {
-			console.error(
-				getPrefix(),
-				"--- SCRAPE PROCESS FAILED: Could not initiate download via anchor element. ---",
-				error
-			);
-			console.log(getPrefix(), "Falling back to GM_download...");
-			GM_download({
-				url: url,
-				name: filename,
-				onload: () => {
-					console.log(
-						getPrefix(),
-						`--- SCRAPE PROCESS COMPLETE (via GM_download): Successfully downloaded ${filename} ---`
-					);
-					URL.revokeObjectURL(url);
-				},
-				onerror: (err) => {
-					console.error(
-						getPrefix(),
-						"--- SCRAPE PROCESS FAILED (via GM_download): Download failed ---"
-					);
-					console.error(getPrefix(), "Error Details:", err);
-					URL.revokeObjectURL(url);
-				},
-			});
-		}
+		// Clean download method using temporary anchor element
+		console.log(getPrefix(), "Initiating download via temporary anchor element...");
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = filename;
+		document.body.appendChild(a);
+		a.click();
+		// Cleanup
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+		console.log(getPrefix(), `--- SCRAPE PROCESS COMPLETE: Download initiated for ${filename} ---`);
 	}
 
 	/**
