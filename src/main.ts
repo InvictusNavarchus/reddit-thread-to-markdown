@@ -1,2 +1,7 @@
-// @ts-ignore isolatedModules
-console.log('hello world');
+import { initInjector } from "./ui/injector";
+
+function main() {
+    initInjector();
+}
+
+void main();
