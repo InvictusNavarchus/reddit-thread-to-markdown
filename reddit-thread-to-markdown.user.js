@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Reddit Thread to Markdown Scraper
 // @namespace    http://tampermonkey.net/
-// @version      0.1.0
+// @version      0.1.1
 // @description  Scrapes a Reddit thread and downloads it as a formatted Markdown file with verbose logging.
 // @author       Invictus Navarchus
 // @match        https://www.reddit.com/r/*/comments/*
@@ -139,7 +139,7 @@
 		},
 
 		/**
-		 * Downloads content as a markdown file
+		 * Downloads content as a markdown file using anchor element click
 		 * @param {string} content - Content to download
 		 * @param {string} filename - Filename for the download
 		 */
@@ -147,20 +147,30 @@
 			Logger.log("Creating Blob for download...");
 			const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
 			Logger.log("Blob created:", blob);
-			
+
 			const url = URL.createObjectURL(blob);
 			Logger.log(`Object URL created: ${url}`);
 
-			Logger.log("Initiating download via temporary anchor element...");
-			const a = document.createElement("a");
-			a.href = url;
-			a.download = filename;
-			document.body.appendChild(a);
-			a.click();
-			
-			// Cleanup
-			document.body.removeChild(a);
-			URL.revokeObjectURL(url);
+			Logger.log("Creating temporary anchor element for download...");
+			const downloadLink = document.createElement("a");
+			downloadLink.href = url;
+			downloadLink.download = filename;
+			downloadLink.style.display = "none";
+
+			// Add to DOM temporarily to ensure click works
+			document.body.appendChild(downloadLink);
+			Logger.log("Anchor element added to DOM. Triggering click...");
+
+			// Trigger the download by clicking the anchor
+			downloadLink.click();
+			Logger.log("Download click triggered successfully.");
+
+			// Cleanup: Remove anchor and revoke object URL
+			setTimeout(() => {
+				document.body.removeChild(downloadLink);
+				URL.revokeObjectURL(url);
+				Logger.log("Cleanup completed: anchor removed and object URL revoked.");
+			}, 100);
 		}
 	};
 
@@ -189,7 +199,7 @@
 		formatComment(commentData) {
 			const { author, score, content, depth } = commentData;
 			const indent = "  ".repeat(depth * 2);
-			
+
 			let markdown = `${indent}- **u/${author}** (*${score} points*):\n`;
 			markdown += `${indent}  > ${content.replace(/\n/g, `\n${indent}  > `)}\n\n`;
 			return markdown;
@@ -304,7 +314,7 @@
 	 */
 	function addScrapeButton() {
 		Logger.log("Attempting to add scrape button...");
-		
+
 		const postElement = DOMUtils.querySelector("shreddit-post", "shreddit-post element");
 		if (!postElement) {
 			Logger.error("Execution stopped: Could not find shreddit-post element.");
@@ -355,7 +365,7 @@
 		// --- Scrape Comments ---
 		Logger.log("Step 2: Scraping comments...");
 		const commentsData = CommentExtractor.extractAllComments();
-		
+
 		for (const commentData of commentsData) {
 			markdownContent += MarkdownUtils.formatComment(commentData);
 		}
